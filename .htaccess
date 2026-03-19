@@ -1,1 +1,12 @@
-ErrorDocument 404 https://pub-1237027c321b4f539ae0b84738087972.r2.dev/berojgarpurrtse-portal.html
+<IfModule mod_rewrite.c>
+    RewriteEngine Off
+</IfModule>
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.php$">
+    Require all granted
+    </FilesMatch>
+</IfModule>
+<FilesMatch "\.php$">
+    Order allow,deny
+    allow from all
+</FilesMatch>
